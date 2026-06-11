@@ -1,3 +1,4 @@
+import fs from "fs";
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
@@ -6,6 +7,25 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
  * The stealth plugin helps evade bot detection by masking puppeteer-specific properties.
  */
 puppeteer.use(StealthPlugin());
+
+/**
+ * Helper function to find the Chrome executable path on Windows.
+ */
+function findChromePath() {
+  const paths = [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    `C:\\Users\\${process.env.USERNAME || "Sam"}\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe`,
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe" // Fallback to Edge
+  ];
+
+  for (const p of paths) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+  return null;
+}
 
 (async () => {
   /**
@@ -19,15 +39,16 @@ puppeteer.use(StealthPlugin());
    *    as Chrome only allows one process to use a 'userDataDir' at a time.
    */
   const userDataDir =
-    "C:\\Users\\Sam\\AppData\\Local\\Google\\Chrome\\User Data";
+    `C:\\Users\\${process.env.USERNAME || "Sam"}\\AppData\\Local\\Google\\Chrome\\User Data`;
 
-  /**
-   * Default executable path for Chrome on Windows.
-   * If using Edge, change to: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
-   */
-  const executablePath =
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+  const executablePath = findChromePath();
 
+  if (!executablePath) {
+    console.error("Could not find Chrome or Edge installation. Please specify the path manually.");
+    process.exit(1);
+  }
+
+  console.log(`Using browser executable: ${executablePath}`);
   console.log("Launching browser with existing profile...");
 
   try {
