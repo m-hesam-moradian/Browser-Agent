@@ -1,51 +1,73 @@
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
-// Integrate the stealth plugin to evade bot detection
+/**
+ * Requirement 1: Use puppeteer-extra and stealth plugin
+ * The stealth plugin helps evade bot detection by masking puppeteer-specific properties.
+ */
 puppeteer.use(StealthPlugin());
 
 (async () => {
-  // IMPORTANT: Replace <Username> with your actual Windows username.
-  // If you use a specific profile other than "Default", ensure it's properly handled or pointed to 
-  // (e.g., 'C:\\Users\\<Username>\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 1').
-  const userDataDir = 'C:\\Users\\<Username>\\AppData\\Local\\Google\\Chrome\\User Data';
+  /**
+   * Requirement 2: Browser Configuration (Existing Profile)
+   *
+   * IMPORTANT:
+   * 1. Replace <Username> with your Windows account name.
+   * 2. If you are using a specific Chrome profile (like "Profile 1"), append it to the path.
+   *    Default is usually: C:\Users\<Username>\AppData\Local\Google\Chrome\User Data
+   * 3. Ensure all Chrome instances are CLOSED before running this script, or use a separate profile directory,
+   *    as Chrome only allows one process to use a 'userDataDir' at a time.
+   */
+  const userDataDir =
+    "C:\\Users\\Sam\\AppData\\Local\\Google\\Chrome\\User Data";
 
-  // Default path to the Chrome executable on Windows
-  // Note: Depending on your installation, it might be in 'Program Files (x86)' instead of 'Program Files'.
-  const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  /**
+   * Default executable path for Chrome on Windows.
+   * If using Edge, change to: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+   */
+  const executablePath =
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 
-  console.log('Launching browser with existing profile...');
+  console.log("Launching browser with existing profile...");
 
   try {
     const browser = await puppeteer.launch({
-      headless: false, // Make the browser window fully visible
+      // Requirement 2: Set headless: false for visibility
+      headless: false,
       executablePath: executablePath,
       userDataDir: userDataDir,
-      defaultViewport: null, // Let the viewport match the window size
-      args: ['--start-maximized'], // Start the browser maximized
+      // Requirement 2: Ensure it looks like a normal user window
+      defaultViewport: null,
+      args: ["--start-maximized"],
     });
 
-    console.log('Navigating to Google AI Studio...');
-    
-    // Use the first open tab instead of creating a second one initially
+    console.log("Navigating to Google AI Studio...");
+
+    // Get the initial page or create a new one
     const pages = await browser.pages();
     const page = pages.length > 0 ? pages[0] : await browser.newPage();
 
-    // Navigate to Google AI Studio and wait for the page to load completely
-    await page.goto('https://aistudio.google.com/', {
-      waitUntil: 'networkidle2',
+    // Requirement 3: Navigate to Google AI Studio and wait for load
+    await page.goto("https://aistudio.google.com/", {
+      waitUntil: "networkidle2",
     });
 
-    console.log('Navigation complete. The page has fully loaded.');
-    console.log('The browser will remain open for inspection. Press Ctrl+C in the terminal to exit the Node process.');
+    console.log("Navigation complete. Page loaded successfully.");
+    console.log(
+      "Browser is kept open for inspection. Close this terminal or press Ctrl+C to terminate.",
+    );
 
-    // We do NOT call `browser.close()` here so you can manually inspect the state.
-
+    /**
+     * Requirement 3: Do NOT close the browser automatically.
+     * This allows the user to inspect the state and confirm it worked.
+     */
   } catch (error) {
-    console.error('An error occurred during automation:', error);
-    
-    if (error.message.includes('EBUSY') || error.message.includes('lock')) {
-      console.warn('\nNote: You might need to close your existing Chrome browser instances before running this script so Puppeteer can lock the user data directory.');
+    console.error("An error occurred:", error);
+
+    if (error.message.includes("EBUSY") || error.message.includes("lock")) {
+      console.warn(
+        "\nTIP: Chrome might still be running. Close all Chrome windows or specify a different profile.",
+      );
     }
   }
 })();
